@@ -1,0 +1,66 @@
+/* General Styling */
+
+/* About Section */
+.about-container {
+    max-width: 1100px;
+    margin: 50px auto;
+    text-align: center;
+    padding: 20px;
+}
+
+.section-title {
+    font-size: 2.5rem;
+    font-weight: 600;
+    margin-bottom: 20px;
+    color: #222;
+}
+
+/* Team Grid */
+.team-grid {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 20px;
+}
+
+/* Team Member Cards */
+.team-member {
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    width: 250px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s ease-in-out;
+}
+
+.team-member:hover {
+    transform: translateY(-5px);
+}
+
+/* Team Member Image */
+.team-photo {
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-bottom: 15px;
+}
+
+/* Text Styles */
+.member-name {
+    font-size: 1.4rem;
+    font-weight: 600;
+    margin: 5px 0;
+}
+
+.member-role {
+    font-size: 1rem;
+    color: #666;
+    margin-bottom: 10px;
+    font-weight: 500;
+}
+
+.member-bio {
+    font-size: 0.9rem;
+    color: #555;
+}
