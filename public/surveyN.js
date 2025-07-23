@@ -11,6 +11,7 @@
 //Survey Questions
 //phase1: only general and accessability questions will be populated 
 let collegeName;
+//all possible survey quesitons
 const questions = [
     //Identity Block
     {   type: "yesno", 
@@ -150,6 +151,10 @@ const questions = [
         category:"general"},
 ];
 
+/** Determines what types of questions are displayed to the user
+ * @param {*} q object to identify questions category
+ * @returns true if a question can be displayed to the user, false if it cannot
+ */
 function showQuestion(q/*, responses*/) {
   // Always show general and screening questions
   if (/*!q.category ||*/ q.category === "general" || q.category === "identity") return true;
@@ -169,6 +174,12 @@ function showQuestion(q/*, responses*/) {
 
 
 //DOM
+
+/**HTML for questions that require a written response.
+ * @param {String} id for the html element that relates to the DB name
+ * @param {String} questionText 
+ * @returns html for the question with a text area for response 
+ */
 function writtenRespQ(id, questionText){
     const container = document.createElement("div");
     container.className = "text-question";
@@ -181,6 +192,11 @@ function writtenRespQ(id, questionText){
 
 //todo: consider changing so input is inside the label 
 //todo:update if should be fieldset
+/**HTML for accessible likart scale questions 
+ * @param {String} id for the html element that relates to the DB name
+ * @param {String} questionText 
+ * @returns html for the question with a 1-5 star response options
+*/
 function ratingRespQ(id, questionText){
     const container = document.createElement("fieldset");
     container.className = "star-rating";
@@ -202,6 +218,11 @@ function ratingRespQ(id, questionText){
     return container;
 }
 
+/**HTML for yes/no questions 
+ * @param {String} id for the html element that relates to the DB name
+ * @param {String} questionText 
+ * @returns html for the question with yes no response options
+*/
 function ynRespQ(id, questionText){
     const container = document.createElement("fieldset");
     container.className = "yesno-question"
@@ -215,24 +236,29 @@ function ynRespQ(id, questionText){
 
 
 //if disablity_id = "yes" (answers[2]="yes") then show the questions
-
+/**Use question to populate html * 
+ * @param {*} q to get type to populate correct question template with id and text
+ * @returns returns an html element of the question 
+ */
 function renderQuestion(q){
     if (q.type === "written") return writtenRespQ(q.id, q.text);
     if (q.type === "yesno") return ynRespQ(q.id, q.text);
     if (q.type === "rating") return ratingRespQ(q.id, q.text);
 }
 
+/**DOM render and event handling*/
 document.addEventListener("DOMContentLoaded", () => {
-    const urlParams = new URLSearchParams(window.location.search);
-    collegeName = urlParams.get("name");
-
-    document.getElementById("college-header").textContent = `${collegeName} Review` 
-
+    //HTMl elments
     const surveyContainer = document.getElementById("survey-container");
     const submitBtn = document.getElementById("submitBtn");
-
+    const collegeHeader = document.getElementById("college-header");
+    const backBtn =  document.getElementById("backBtn");
     
-    document.getElementById("backBtn").addEventListener("click", function(){
+    //Top of page functionality 
+    const urlParams = new URLSearchParams(window.location.search);
+    collegeName = urlParams.get("name");
+    collegeHeader.textContent = `${collegeName} Review` ; //displays what college review is for
+    backBtn.addEventListener("click", function(){//close window, return to college page on back
       window.close();
     });
     
