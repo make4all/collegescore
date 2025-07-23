@@ -1,7 +1,9 @@
 /*
  * College Inclusiveness Search Team
  * February 2025
+ * Handles routes and server
  */
+
 
 "use strict";
 
