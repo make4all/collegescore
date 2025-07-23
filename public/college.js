@@ -158,7 +158,7 @@
   }
 
   function openRatingForm() {
-    window.open(`/survey.html?name=${encodeURIComponent(collegeName)}`, "_blank");//new window open
+    window.open(`/surveyN.html?name=${encodeURIComponent(collegeName)}`, "_blank");//new window open
   }
 
   // round to exactly 1 decimal place
