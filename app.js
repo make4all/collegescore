@@ -155,7 +155,101 @@ app.get('/stats/:college', async function(req, res){
 
 });
 
-//Adds a survey response to the Reviews table 
+//submit response to the Response table *summer 25 version
+app.post('/submit-response/:college', async function(req, res){
+  try{
+    console.log("Recived survey data: ", req.body);
+    let{
+      college_name,
+      lgbt_id = null,
+      poc_id = null,
+      disability_id = null,
+      optin = null,
+      share_id = null,
+      lgbt_safety = null,
+      lgbt_harm = null,
+      lgbt_inclusion = null,
+      lgbt_bias = null,
+      lgbt_peer = null,
+      lgbt_inst = null,
+      poc_safety = null,
+      poc_harm = null,
+      poc_inclusion = null,
+      poc_bias = null,
+      poc_peer = null,
+      poc_inst = null,
+      disability_safety = null,
+      disability_harm = null,
+      disability_inclusion = null,
+      disability_bias = null,
+      disability_accessibility = null,
+      disability_peer = null,
+      disability_inst = null,
+      disability_accom = null,
+      written_rev = null,
+      written_experience = null,
+      written_challenges = null,
+      written_recs = null } = req.body;
+    let query = "INSERT INTO Responses"
+              //intro
+              + "(college_name,"
+              + " lgbt_id, poc_id, disability_id,"
+              + " optin, share_id,"
+              //lgbt
+              + " lgbt_safety, lgbt_harm,"
+              + " lgbt_inclusion, lgbt_bias," 
+              + " lgbt_peer, lgbt_inst,"
+              //poc
+              + " poc_safety, poc_harm,"
+              + " poc_inclusion, poc_bias," 
+              + " poc_peer, poc_inst,"
+              //disability
+              + " disability_safety, disability_harm,"
+              + " disability_inclusion, disability_bias," 
+              + " disability_peer, disability_inst,"
+              + " disability_accessibility, disability_accom,"
+              //intersectional/general
+              + " written_rev, written_experience,"
+              + " written_challenges, written_recs)"
+              + " VALUES(?, ?, ?, ?, ?, ?," //intro
+                      + "?, ?, ?, ?, ?, ?,"//lgbt
+                      + "?, ?, ?, ?, ?, ?,"//poc
+                      + "?, ?, ?, ?, ?, ?, ?, ?,"//disability
+                      + "?, ?, ?, ?)";//general
+
+    //map req.body values defined above to columns they add to 
+    await runSQLQuery(db => db.run(query, [
+              college_name,
+              lgbt_id, poc_id, disability_id,
+              optin, share_id,
+              //lgbt
+              lgbt_safety, lgbt_harm,
+              lgbt_inclusion, lgbt_bias, 
+              lgbt_peer, lgbt_inst,
+              //poc
+              poc_safety, poc_harm,
+              poc_inclusion, poc_bias, 
+              poc_peer, poc_inst,
+              //disability
+              disability_safety, disability_harm,
+              disability_inclusion, disability_bias, 
+              disability_peer, disability_inst,
+              disability_accessibility, disability_accom,
+              //intersectional/general
+              written_rev, written_experience,
+              written_challenges, written_recs]));
+    res.type("text");
+    res.send("Survey submitted successfully");
+  }catch (err){
+    res.status(SERVER_ERROR).type("text");
+    console.error("Database insert error:", err);
+    res.send(SERVER_ERROR_MSG + ": " + err);
+  }
+
+
+});
+
+//Adds a survey response to the Reviews table *winter 24-25 version
 app.post('/submit-survey/:college', async function(req, res){
   try{
     console.log("Recieved survey data: ", req.body);
@@ -211,6 +305,7 @@ app.post('/submit-survey/:college', async function(req, res){
                       +"?, ?, ?, ?,"
                       +"?, ?, ?, ?,"
                       +"?, ?, ?, ?)";
+      //map req.body values defined above to columns they add to 
       await runSQLQuery(db => db.run(query, [
         college_name, 
         identities_list, race, 

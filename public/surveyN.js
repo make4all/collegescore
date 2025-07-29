@@ -246,6 +246,65 @@ function renderQuestion(q){
     if (q.type === "rating") return ratingRespQ(q.id, q.text);
 }
 
+    /**
+   * If res does not have an ok HTML response code, throws an error.
+   * Returns the argument res.
+   * @param {object} res - HTML result
+   * @returns {object} -  same res passed in
+   */
+  async function statusCheck(res) {
+    if (!res.ok) {
+      throw new Error(await res.text());
+    }
+    return res;
+  }
+
+  /**
+   * returns result of POST request with extractFunc being
+   * either res => res.json() or res => res.text()
+   * @param {string} url - URL to fetch
+   * @param {object} body - body of POST request
+   * @param {function} extractFunc - res => res.json() or res => res.text()
+   * @returns {object | string | undefined} - res.json(), res.text(), or undefined
+   */
+  async function postRequest(url, body, extractFunc) {
+    try {
+      let res = await fetch(url, {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: body
+      });
+      await statusCheck(res);
+      res = await extractFunc(res);
+      console.log("Post response: ", res);
+      return res;
+    } catch (err) {
+      console.error("Post error:" ,err);
+      //handleError();
+    }
+  }
+
+
+ /**POST form data to database and close survey*/
+  function submitSurvey(surveyContainer, collegeName){
+    let formData = new FormData(surveyContainer);
+    let jsonData = {};
+    jsonData["college_name"] = collegeName;
+
+    formData.forEach((value, key) => {
+      if (value.trim() === "") {
+          jsonData[key] = null;  // handle unasnwered fields
+      } else if (!isNaN(value)) {
+          jsonData[key] = parseInt(value, 10); //convert star ratings to integers (base 10)
+      } else {
+          jsonData[key] = value;
+      }
+    });
+    postRequest(`/submit-response/${encodeURIComponent(collegeName)}`, JSON.stringify(jsonData), res => res.text());
+    window.open(`/college.html?name=${encodeURIComponent(collegeName)}`); //returns to college page where review was left
+  }
+
+
 /**DOM render and event handling*/
 document.addEventListener("DOMContentLoaded", () => {
     //HTMl elments
@@ -276,4 +335,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
     //other event listeners
 
+    //Submit survey when submit button is pressed
+    surveyContainer.addEventListener("submit", function(event){
+      event.preventDefault();
+      submitSurvey(surveyContainer,collegeName);
+    });
+    
 });
