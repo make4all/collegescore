@@ -52,7 +52,7 @@ textarea {
   border: 1px solid #cbcaca;
   border-radius:8px;
 }
-/*
+
 .star-rating {
   border: none;
   margin-bottom: 20px;
@@ -61,7 +61,7 @@ textarea {
 
 .star-rating fieldset{
   display: flex;
-  /*flex-direction: row-reverse; Right to left for better UX *//*
+  /*flex-direction: row-reverse; Right to left for better UX */
   justify-content: start;
   gap: 5px;
 }
@@ -74,22 +74,22 @@ textarea {
 .star-rating label {
   font-size: 30px;
   cursor: pointer;
-  color: #ccc; /* Default unselected color *//*
+  color: #ccc; /* Default unselected color */
   transition: color 0.2s;
 }
 
 .star-rating label:hover,
 .star-rating label:hover ~ label {
-  color:  rgb(219, 164, 0); /* Hover effect *//*
+  color:  rgb(219, 164, 0); /* Hover effect */
 }
 
 .star-rating input:checked ~ label {
-  color:  rgb(219, 164, 0); /* Selected stars stay highlighted *//*
+  color:  rgb(219, 164, 0); /* Selected stars stay highlighted */
 }
 
-/* Add visual feedback for focus (when tabbing) *//*
+/* Add visual feedback for focus (when tabbing) */
 .star-rating input:focus + label,
 .star-rating label:focus {
-  color: rgb(219, 164, 0); /* Highlight focused star *//*
+  color: rgb(219, 164, 0); /* Highlight focused star */
 }
 
