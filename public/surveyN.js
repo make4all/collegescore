@@ -1,13 +1,224 @@
 /**Structure
- * Global Variables and Data (questions and answers)
  * Render and DOM functions (renderQs and update progress)
  * Logic/flow control (what questions to show and moving to next)
  * Event Handling
  * Posts
+ * Helpers
+ * Questions & Responces
  */
 
+document.addEventListener("DOMContentLoaded", initSurvey);
 
-//TODO: make functions for repeat html
+/**DOM render and event handling*/
+function initSurvey() {
+    //HTMl elments
+    const surveyContainer = document.getElementById("survey-container");
+    const submitBtn = document.getElementById("submitBtn");
+    const collegeHeader = document.getElementById("college-header");
+    const backBtn =  document.getElementById("backBtn");
+    
+    /*Rendering*/
+    //Top of page functionality 
+    const urlParams = new URLSearchParams(window.location.search);
+    collegeName = urlParams.get("name");
+    collegeHeader.textContent = `${collegeName} Review` ; //displays what college review is for
+    
+    //Render visable questions
+    const visibleQuestions = questions.filter(q => showQuestion(q));
+    visibleQuestions.forEach(q => {
+    const elemQ = renderQuestion(q);
+    const question = document.createElement("div");//Question wrapper for styling
+    question.className = "question";
+    question.appendChild(elemQ);
+    surveyContainer.insertBefore(question,submitBtn); //Insert question before submit button
+    });
+
+    stars();
+
+    /*Event Listeners*/
+    backBtn.addEventListener("click", function(){//close window, return to college page on back
+      window.close();
+    });
+
+    //Submit survey when submit button is pressed
+    surveyContainer.addEventListener("submit", function(event){
+      event.preventDefault();
+      submitSurvey(surveyContainer,collegeName);
+    });
+    
+};
+
+/*Logic*/
+/** Determines what types of questions are displayed to the user
+ * @param {*} q object to identify questions category
+ * @returns true if a question can be displayed to the user, false if it cannot
+ * lgbt and poc commented out while on accessability only
+ */
+function showQuestion(q/*, responses*/) {
+  // Always show general and screening questions
+  if (/*!q.category ||*/ q.category === "general" || q.category === "identity") return true;
+
+  // Show LGBTQIA2+ questions only if they identified as such
+  //if (q.category === "lgbt" && responses.lgbt_id === "yes") return true;
+
+  // Show POC questions only if they identified as such
+  //if (q.category === "poc" && responses.poc_id === "yes") return true;
+
+  // Show disability questions only if they identified as such
+  if (q.category === "disability" /*&& responses.disability_id === "yes"*/) return true;
+  
+  // Otherwise, don't show
+  return false;
+}
+
+//if disablity_id = "yes" (answers[2]="yes") then show the questions
+/**Use question to populate html * 
+ * @param {*} q to get type to populate correct question template with id and text
+ * @returns returns an html element of the question 
+ */
+function renderQuestion(q){
+    if (q.type === "written") return writtenRespQ(q.id, q.text);
+    if (q.type === "yesno") return ynRespQ(q.id, q.text);
+    if (q.type === "rating") return ratingRespQ(q.id, q.text);
+}
+
+
+ /**POST form data to database and close survey*/
+  function submitSurvey(surveyContainer, collegeName){
+    let formData = new FormData(surveyContainer);
+    let jsonData = {};
+    jsonData["college_name"] = collegeName;
+
+    formData.forEach((value, key) => {
+      if (value.trim() === "") {
+          jsonData[key] = null;  // handle unasnwered fields
+      } else if (!isNaN(value)) {
+          jsonData[key] = parseInt(value, 10); //convert star ratings to integers (base 10)
+      } else {
+          jsonData[key] = value;
+      }
+    });
+    postRequest(`/submit-response/${encodeURIComponent(collegeName)}`, JSON.stringify(jsonData), res => res.text());
+    window.open(`/college.html?name=${encodeURIComponent(collegeName)}`); //returns to college page where review was left
+  }
+  /**Functionality for star ratings */
+  function stars(){
+
+    const starRatings = document.querySelectorAll(".star-rating");
+
+    starRatings.forEach(rating => {
+        const stars = rating.querySelectorAll("label");
+        const values = rating.querySelectorAll("input");
+
+        stars.forEach(star => {
+            star.addEventListener("mouseover", () => highlightStars(star));
+            star.addEventListener("mouseout", resetStars);
+            star.addEventListener("click", () => selectStars(star));
+        });
+
+        values.forEach(input => {
+          // Add event listener for focus
+          input.addEventListener("focus", () => highlightFocus(input));
+          input.addEventListener("blur", resetStars); // Reset highlighting when focus is lost
+        });
+
+        /**Highlight up to and including a given star
+         * @param star to be highlighted
+         */
+        function highlightStars(star) {
+            let value = star.previousElementSibling.value;
+            resetStars(); // Clear previous highlights
+            for (let i = 0; i < value; i++) {
+                stars[i].style.color = "rgb(219, 164, 0)";
+            }
+        }
+
+        /*Unselect and unhighlight star*/
+        function resetStars() {
+            stars.forEach(star => {
+                star.style.color = "#ccc"; // Reset to default
+            });
+            const checkedStar = rating.querySelector("input:checked");
+            if (checkedStar) {
+                selectStars(checkedStar.nextElementSibling);
+            }
+        }
+
+        /**Select a certain star to generate a 1-5 rating
+         * @param star to highlight to (inclusive)
+         */
+        function selectStars(star) {
+            let value = star.previousElementSibling.value;
+            for (let i = 0; i < value; i++) {
+                stars[i].style.color = "rgb(219, 164, 0)";
+            }
+        }
+    });
+}
+
+
+/*Questions Formatting*/
+
+/**HTML for questions that require a written response.
+ * @param {String} id for the html element that relates to the DB name
+ * @param {String} questionText 
+ * @returns html for the question with a text area for response 
+ */
+function writtenRespQ(id, questionText){
+    const container = document.createElement("div");
+    container.className = "text-question";
+    container.innerHTML = `
+        <label for="${id}">${questionText}</label>
+        <textarea id="${id}" name="${id}" rows="6" cols="33"></textarea>
+    `;
+    return container;
+}
+
+//todo: consider changing so input is inside the label 
+//todo:update if should be fieldset
+/**HTML for accessible likart scale questions 
+ * @param {String} id for the html element that relates to the DB name
+ * @param {String} questionText 
+ * @returns html for the question with a 1-5 star response options
+*/
+function ratingRespQ(id, questionText){
+    const container = document.createElement("fieldset");
+    container.className = "star-rating";
+    container.innerHTML = `
+        <legend>${questionText}</legend>
+        <div>
+          <input type="radio" name="${id}" value="1" id="${id}1" aria-label="1 star"/>
+          <label for="${id}1">★</label>
+          <input type="radio" name="${id}" value="2" id="${id}2" aria-label="2 stars"/>
+          <label for="${id}2">★</label>
+          <input type="radio" name="${id}" value="3" id="${id}3" aria-label="3 stars"/>
+          <label for="${id}3">★</label>
+          <input type="radio" name="${id}" value="4" id="${id}4" aria-label="4 stars"/>
+          <label for="${id}4">★</label>
+          <input type="radio" name="${id}" value="5" id="${id}5" aria-label="5 stars"/>
+          <label for="${id}5">★</label>
+        </div>
+    `;
+    return container;
+}
+
+/**HTML for yes/no questions 
+ * @param {String} id for the html element that relates to the DB name
+ * @param {String} questionText 
+ * @returns html for the question with yes no response options
+*/
+function ynRespQ(id, questionText){
+    const container = document.createElement("fieldset");
+    container.className = "yesno-question"
+    container.innerHTML = `
+        <legend id="${id}">${questionText}</legend>
+        <label><input type="radio" name="${id}" value="yes" required> Yes</label>
+        <label><input type="radio" name="${id}" value="no" required> No</label>
+    ` ;  
+    return container;
+}
+
+
 //Survey Questions
 //phase1: only general and accessability questions will be populated 
 let collegeName;
@@ -151,102 +362,9 @@ const questions = [
         category:"general"},
 ];
 
-/** Determines what types of questions are displayed to the user
- * @param {*} q object to identify questions category
- * @returns true if a question can be displayed to the user, false if it cannot
- */
-function showQuestion(q/*, responses*/) {
-  // Always show general and screening questions
-  if (/*!q.category ||*/ q.category === "general" || q.category === "identity") return true;
+/*-----------HELPER FUNCTIONS-----------*/
 
-  // Show LGBTQIA2+ questions only if they identified as such
-  //if (q.category === "lgbt" && responses.lgbt_id === "yes") return true;
-
-  // Show POC questions only if they identified as such
-  //if (q.category === "poc" && responses.poc_id === "yes") return true;
-
-  // Show disability questions only if they identified as such
-  if (q.category === "disability" /*&& responses.disability_id === "yes"*/) return true;
-  
-  // Otherwise, don't show
-  return false;
-}
-
-
-//DOM
-
-/**HTML for questions that require a written response.
- * @param {String} id for the html element that relates to the DB name
- * @param {String} questionText 
- * @returns html for the question with a text area for response 
- */
-function writtenRespQ(id, questionText){
-    const container = document.createElement("div");
-    container.className = "text-question";
-    container.innerHTML = `
-        <label for="${id}">${questionText}</label>
-        <textarea id="${id}" name="${id}" rows="6" cols="33"></textarea>
-    `;
-    return container;
-}
-
-//todo: consider changing so input is inside the label 
-//todo:update if should be fieldset
-/**HTML for accessible likart scale questions 
- * @param {String} id for the html element that relates to the DB name
- * @param {String} questionText 
- * @returns html for the question with a 1-5 star response options
-*/
-function ratingRespQ(id, questionText){
-    const container = document.createElement("fieldset");
-    container.className = "star-rating";
-    container.innerHTML = `
-        <legend>${questionText}</legend>
-        <div>
-          <input type="radio" name="${id}" value="1" id="${id}1" aria-label="1 star"/>
-          <label for="${id}1">★</label>
-          <input type="radio" name="${id}" value="2" id="${id}2" aria-label="2 stars"/>
-          <label for="${id}2">★</label>
-          <input type="radio" name="${id}" value="3" id="${id}3" aria-label="3 stars"/>
-          <label for="${id}3">★</label>
-          <input type="radio" name="${id}" value="4" id="${id}4" aria-label="4 stars"/>
-          <label for="${id}4">★</label>
-          <input type="radio" name="${id}" value="5" id="${id}5" aria-label="5 stars"/>
-          <label for="${id}5">★</label>
-        </div>
-    `;
-    return container;
-}
-
-/**HTML for yes/no questions 
- * @param {String} id for the html element that relates to the DB name
- * @param {String} questionText 
- * @returns html for the question with yes no response options
-*/
-function ynRespQ(id, questionText){
-    const container = document.createElement("fieldset");
-    container.className = "yesno-question"
-    container.innerHTML = `
-        <legend id="${id}">${questionText}</legend>
-        <label><input type="radio" name="${id}" value="yes" required> Yes</label>
-        <label><input type="radio" name="${id}" value="no" required> No</label>
-    ` ;  
-    return container;
-}
-
-
-//if disablity_id = "yes" (answers[2]="yes") then show the questions
-/**Use question to populate html * 
- * @param {*} q to get type to populate correct question template with id and text
- * @returns returns an html element of the question 
- */
-function renderQuestion(q){
-    if (q.type === "written") return writtenRespQ(q.id, q.text);
-    if (q.type === "yesno") return ynRespQ(q.id, q.text);
-    if (q.type === "rating") return ratingRespQ(q.id, q.text);
-}
-
-    /**
+ /**
    * If res does not have an ok HTML response code, throws an error.
    * Returns the argument res.
    * @param {object} res - HTML result
@@ -280,65 +398,5 @@ function renderQuestion(q){
       return res;
     } catch (err) {
       console.error("Post error:" ,err);
-      //handleError();
     }
   }
-
-
- /**POST form data to database and close survey*/
-  function submitSurvey(surveyContainer, collegeName){
-    let formData = new FormData(surveyContainer);
-    let jsonData = {};
-    jsonData["college_name"] = collegeName;
-
-    formData.forEach((value, key) => {
-      if (value.trim() === "") {
-          jsonData[key] = null;  // handle unasnwered fields
-      } else if (!isNaN(value)) {
-          jsonData[key] = parseInt(value, 10); //convert star ratings to integers (base 10)
-      } else {
-          jsonData[key] = value;
-      }
-    });
-    postRequest(`/submit-response/${encodeURIComponent(collegeName)}`, JSON.stringify(jsonData), res => res.text());
-    window.open(`/college.html?name=${encodeURIComponent(collegeName)}`); //returns to college page where review was left
-  }
-
-
-/**DOM render and event handling*/
-document.addEventListener("DOMContentLoaded", () => {
-    //HTMl elments
-    const surveyContainer = document.getElementById("survey-container");
-    const submitBtn = document.getElementById("submitBtn");
-    const collegeHeader = document.getElementById("college-header");
-    const backBtn =  document.getElementById("backBtn");
-    
-    //Top of page functionality 
-    const urlParams = new URLSearchParams(window.location.search);
-    collegeName = urlParams.get("name");
-    collegeHeader.textContent = `${collegeName} Review` ; //displays what college review is for
-    backBtn.addEventListener("click", function(){//close window, return to college page on back
-      window.close();
-    });
-    
-    //Render visable questions
-    const visibleQuestions = questions.filter(q => showQuestion(q));
-    visibleQuestions.forEach(q => {
-    const elemQ = renderQuestion(q);
-    //Question wrapper for styling
-    const question = document.createElement("div");
-    question.className = "question";
-    question.appendChild(elemQ);
-    //Insert question before submit button
-    surveyContainer.insertBefore(question,submitBtn); 
-    });
-
-    //other event listeners
-
-    //Submit survey when submit button is pressed
-    surveyContainer.addEventListener("submit", function(event){
-      event.preventDefault();
-      submitSurvey(surveyContainer,collegeName);
-    });
-    
-});
