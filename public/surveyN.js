@@ -55,7 +55,7 @@ function initSurvey() {
         active.type === "radio"
         ) {
         e.preventDefault();
-        active.checked = true;
+        //active.checked = true;
         }
     });
 };
@@ -118,10 +118,13 @@ function renderQuestion(q){
   function stars() {
   const starRatings = document.querySelectorAll(".star-rating");
 
-  starRatings.forEach(rating => {
+  starRatings.forEach(rating => { //for each rating question
     const stars = rating.querySelectorAll("label");
     const inputs = rating.querySelectorAll("input");
 
+    //sets up event listening and functionality for each star in a question instance
+        //this loop only runs on page load
+        //event listeners inside the loop are running repeatedly
     stars.forEach((star, index) => {
       const input = star.previousElementSibling;
 
@@ -138,26 +141,32 @@ function renderQuestion(q){
       input.addEventListener("blur", resetStars);
 
       input.addEventListener("keydown", (e) => {
-        const total = inputs.length;
+        const total = inputs.length;//number of stars in the question block
 
-        if (e.key === "ArrowRight" || e.key === "Right") {
+        if (e.key === "ArrowRight" || e.key === "Right") {//rating+1
           e.preventDefault();
           const next = (index + 1) % total;
-          inputs[next].focus();
-        } else if (e.key === "ArrowLeft" || e.key === "Left") {
+          inputs[next].focus();//triggers focus event listern on the new star (in same group)
+        } else if (e.key === "ArrowLeft" || e.key === "Left") {//rating-1
           e.preventDefault();
           const prev = (index - 1 + total) % total;
-          inputs[prev].focus();
-        } 
+          inputs[prev].focus();//triggers focus event listern on the new star (in same group)
+        } else if (e.key === " " || e.key === "Enter") { //allow select with space and enter
+          e.preventDefault();
+          input.checked = true;
+          highlightStars(index);
+        }
       });
     });
 
+    //Highlights each star up to and including the current (hovered/focused) star
     function highlightStars(index) {
       stars.forEach((star, i) => {
         star.style.color = i <= index ? "rgb(219, 164, 0)" : "#ccc";
       });
     }
 
+    //Unhighlights stars that are not currently hovered/focused up to
     function resetStars() {
       stars.forEach((star, i) => {
         const checked = rating.querySelector("input:checked");
@@ -169,7 +178,7 @@ function renderQuestion(q){
         }
       });
     }
-  });
+});
 }
 
 
