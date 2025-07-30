@@ -45,7 +45,19 @@ function initSurvey() {
       event.preventDefault();
       submitSurvey(surveyContainer,collegeName);
     });
-    
+
+    document.addEventListener("keydown", function(e) {
+        const active = document.activeElement;
+        if (
+        (e.key === "Enter" || e.key === " ") &&
+        active &&
+        active.tagName === "INPUT" &&
+        active.type === "radio"
+        ) {
+        e.preventDefault();
+        active.checked = true;
+        }
+    });
 };
 
 /*Logic*/
@@ -101,60 +113,65 @@ function renderQuestion(q){
     postRequest(`/submit-response/${encodeURIComponent(collegeName)}`, JSON.stringify(jsonData), res => res.text());
     window.open(`/college.html?name=${encodeURIComponent(collegeName)}`); //returns to college page where review was left
   }
+
   /**Functionality for star ratings */
-  function stars(){
+  function stars() {
+  const starRatings = document.querySelectorAll(".star-rating");
 
-    const starRatings = document.querySelectorAll(".star-rating");
+  starRatings.forEach(rating => {
+    const stars = rating.querySelectorAll("label");
+    const inputs = rating.querySelectorAll("input");
 
-    starRatings.forEach(rating => {
-        const stars = rating.querySelectorAll("label");
-        const values = rating.querySelectorAll("input");
+    stars.forEach((star, index) => {
+      const input = star.previousElementSibling;
 
-        stars.forEach(star => {
-            star.addEventListener("mouseover", () => highlightStars(star));
-            star.addEventListener("mouseout", resetStars);
-            star.addEventListener("click", () => selectStars(star));
-        });
+      // Mouse events
+      star.addEventListener("mouseover", () => highlightStars(index));
+      star.addEventListener("mouseout", resetStars);
+      star.addEventListener("click", () => {
+        input.checked = true;
+        highlightStars(index);
+      });
 
-        values.forEach(input => {
-          // Add event listener for focus
-          input.addEventListener("focus", () => highlightFocus(input));
-          input.addEventListener("blur", resetStars); // Reset highlighting when focus is lost
-        });
+      // Keyboard events
+      input.addEventListener("focus", () => highlightStars(index));
+      input.addEventListener("blur", resetStars);
 
-        /**Highlight up to and including a given star
-         * @param star to be highlighted
-         */
-        function highlightStars(star) {
-            let value = star.previousElementSibling.value;
-            resetStars(); // Clear previous highlights
-            for (let i = 0; i < value; i++) {
-                stars[i].style.color = "rgb(219, 164, 0)";
-            }
-        }
+      input.addEventListener("keydown", (e) => {
+        const total = inputs.length;
 
-        /*Unselect and unhighlight star*/
-        function resetStars() {
-            stars.forEach(star => {
-                star.style.color = "#ccc"; // Reset to default
-            });
-            const checkedStar = rating.querySelector("input:checked");
-            if (checkedStar) {
-                selectStars(checkedStar.nextElementSibling);
-            }
-        }
-
-        /**Select a certain star to generate a 1-5 rating
-         * @param star to highlight to (inclusive)
-         */
-        function selectStars(star) {
-            let value = star.previousElementSibling.value;
-            for (let i = 0; i < value; i++) {
-                stars[i].style.color = "rgb(219, 164, 0)";
-            }
-        }
+        if (e.key === "ArrowRight" || e.key === "Right") {
+          e.preventDefault();
+          const next = (index + 1) % total;
+          inputs[next].focus();
+        } else if (e.key === "ArrowLeft" || e.key === "Left") {
+          e.preventDefault();
+          const prev = (index - 1 + total) % total;
+          inputs[prev].focus();
+        } 
+      });
     });
+
+    function highlightStars(index) {
+      stars.forEach((star, i) => {
+        star.style.color = i <= index ? "rgb(219, 164, 0)" : "#ccc";
+      });
+    }
+
+    function resetStars() {
+      stars.forEach((star, i) => {
+        const checked = rating.querySelector("input:checked");
+        if (checked) {
+          const checkedIndex = Array.from(inputs).indexOf(checked);
+          star.style.color = i <= checkedIndex ? "rgb(219, 164, 0)" : "#ccc";
+        } else {
+          star.style.color = "#ccc";
+        }
+      });
+    }
+  });
 }
+
 
 
 /*Questions Formatting*/
@@ -188,7 +205,7 @@ function ratingRespQ(id, questionText){
         <legend>${questionText}</legend>
         <div>
           <input type="radio" name="${id}" value="1" id="${id}1" aria-label="1 star"/>
-          <label for="${id}1">★</label>
+          <label for="${id}1" >★</label>
           <input type="radio" name="${id}" value="2" id="${id}2" aria-label="2 stars"/>
           <label for="${id}2">★</label>
           <input type="radio" name="${id}" value="3" id="${id}3" aria-label="3 stars"/>
@@ -349,7 +366,7 @@ const questions = [
         text: "If you would like to, please share a short review of your experience in your college.",
         category:"general"},
     {   type: "written", 
-        id: "written_expereience", 
+        id: "written_exp", 
         text: "Did you feel welcome and supported? Please share how your identity has shaped your experience at this school.",
         category:"general"},
     {   type: "written", 

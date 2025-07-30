@@ -90,6 +90,7 @@ textarea {
 /* Add visual feedback for focus (when tabbing) */
 .star-rating input:focus + label,
 .star-rating label:focus {
+  outline: 0.25rem solid rgb(4, 192, 255);
   color: rgb(219, 164, 0); /* Highlight focused star */
 }
 
