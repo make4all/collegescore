@@ -182,12 +182,12 @@ app.post('/submit-response/:college', async function(req, res){
       disability_harm = null,
       disability_inclusion = null,
       disability_bias = null,
-      disability_accessibility = null,
+      disability_access = null,
       disability_peer = null,
       disability_inst = null,
       disability_accom = null,
       written_rev = null,
-      written_experience = null,
+      written_exp = null,
       written_challenges = null,
       written_recs = null } = req.body;
     let query = "INSERT INTO Responses"
@@ -234,9 +234,9 @@ app.post('/submit-response/:college', async function(req, res){
               disability_safety, disability_harm,
               disability_inclusion, disability_bias, 
               disability_peer, disability_inst,
-              disability_accessibility, disability_accom,
+              disability_access, disability_accom,
               //intersectional/general
-              written_rev, written_experience,
+              written_rev, written_exp,
               written_challenges, written_recs]));
     res.type("text");
     res.send("Survey submitted successfully");
