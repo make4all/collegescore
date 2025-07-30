@@ -20,8 +20,7 @@ const SERVER_ERROR = 500;
 
 const SERVER_ERROR_MSG = "Uh oh! Something went wrong on the server."
 
-
-
+/*-----------------New for Summer on Use */
 // for application/x-www-form-urlencoded
 app.use(express.urlencoded({extended: true})); // built-in middleware
 // for application/json
@@ -29,7 +28,10 @@ app.use(express.json()); // built-in middleware
 // for multipart/form-data (required with FormData)
 app.use(multer().none()); // requires the "multer" module
 
-//Returns an array of all college information, ordered alphabetically by name
+
+/*****GETs*****/
+/*Search Page*/
+//Returns an array of all college information, ordered alphabetically by name (capstone code)
 app.get('/colleges', async function(req, res) {
   try {
     let query = "SELECT * FROM Colleges ORDER BY name";
@@ -42,7 +44,7 @@ app.get('/colleges', async function(req, res) {
 });
 
 
-//Returns all information about one college
+//Returns all information about one college (capstone code)
 app.get('/colleges/:name', async function(req, res) {
   try {
     let name = req.params["name"];
@@ -55,7 +57,7 @@ app.get('/colleges/:name', async function(req, res) {
   }
 });
 
-//Returns an array of all names of colleges, ordered alphabetically
+//Returns an array of all names of colleges, ordered alphabetically (capstone code)
 app.get('/college-names', async function(req, res) {
   try {
     let query = "SELECT name FROM Colleges ORDER BY name";
@@ -71,7 +73,7 @@ app.get('/college-names', async function(req, res) {
   }
 });
 
-//Finds all colleges that match or are similar to the search
+//Finds all colleges that match or are similar to the search (capstone code)
 app.get('/search/:search', async function(req, res) {
   try {
     let search = req.params["search"];
@@ -91,11 +93,15 @@ app.get('/search/:search', async function(req, res) {
   }
 });
 
-//Returns all survey responses for a University 
-app.get('/all-reviews/:college', async function(req, res) {
+/*College Page*/
+//Returns all written responses for a University 
+app.get('/written-reviews/:college', async function(req, res) {
   try {
     let college = req.params["college"];
-    let query = "SELECT * FROM Reviews WHERE college_name = ?";
+    let query = `SELECT share_id as self_id,
+                 disability_accom as accom, written_rev as rev, written_experience as exp,
+                 written_challenges as challenges, written_recs as recs,
+                 FROM Responses WHERE college_name = ?`;
 
     let rows = await runSQLQuery(db => db.all(query, college));
    
@@ -110,24 +116,15 @@ app.get('/all-reviews/:college', async function(req, res) {
   }
 });
 
-//Returns all the averaged ratings from Reviews table for a given university
-app.get('/rating-avgs/:college', async function(req, res) {
+//Returns all the averaged accessability ratings from Responses table for a given university
+app.get('/access-avgs/:college', async function(req, res) {
   try {
     let college = req.params["college"];
-    let query = "SELECT AVG(lgbtq_safety)         AS lgbtq_avg," 
-              + " AVG(accommodations_difficulty)  AS difficulty_avg,"
-              + " AVG(reliability_rating)         AS reliability_avg,"
-              + " AVG(accommodation_rating)       AS rating_avg," 
-              + " AVG(outside_rating)             AS outside_avg," 
-              + " AVG(inside_accessibility)       AS inside_avg," 
-              + " AVG(liberal_rating)             AS liberal_avg," 
-              + " AVG(diversity_rating)           AS diversity_avg," 
-              + " AVG(tolerance_rating)           AS tolerance_avg," 
-              + " AVG(supportive_rating)          AS supportive_avg," 
-              + " AVG(clubs_rating)               AS clubs_avg,"
-              + " AVG(overallAccess_rating)       AS overallAccess_avg," 
-              + " AVG(overallIdentity_rating)     AS overallIdentity_avg" 
-              + " FROM Reviews WHERE college_name = ?";
+    let query = `SELECT AVG(disability_safety) AS safety_avg, 
+                (AVG(disability_inclusion) + AVG(disability_bias))/2 AS inclusion_avg, 
+                (AVG(disability_accessibility) + AVG(disability_peer) + AVG(disability_inst))/3 AS access_avg 
+                FROM Responses WHERE college_name = ? AND disability_id="yes"
+                `; 
     let rows = await runSQLQuery(db => db.get(query, college));
     res.json(rows) //match found
   } catch (err) {
@@ -136,15 +133,20 @@ app.get('/rating-avgs/:college', async function(req, res) {
   }
 });
 
-//Return Y/N stats for a given college
-app.get('/stats/:college', async function(req, res){
+//Return demographics 
+//Do not start using this data until a college has over 50 responses, 
+//on college page if this information is null return a message of "We need more reviews before displaying this information!"
+app.get('/dem/:college', async function(req, res){
   try{
     let college = req.params["college"];
-    let query = "SELECT AVG(exclusionary = 'Yes')*100  AS exclusionary_score,"
-              +" AVG(friendly = 'Yes')*100 AS friendly_score,"
-              +" AVG(lgbtq_id = 'Yes')*100  AS lgbtq_score,"
-              +" AVG(mobility = 'Yes')*100  AS mobility_score"
-              +" FROM Reviews WHERE college_name = ?";
+    let query =`
+                SELECT AVG(lgbtq_id = 'Yes')*100  AS lgbtq_perc,
+                AVG(poc_id = 'Yes')*100  AS poc_perc,
+                AVG(disability_id = 'Yes')*100  AS disability_perc
+                FROM Responses WHERE college_name = ?
+                GROUP BY college_name = ?
+                HAVING COUNT(*) > 50
+              `;
     let rows = await runSQLQuery(db => db.get(query,college));
     res.json(rows);
   }catch (err){
@@ -155,6 +157,9 @@ app.get('/stats/:college', async function(req, res){
 
 });
 
+
+/*****POSTs*****/
+/*Survey */
 //submit response to the Response table *summer 25 version
 app.post('/submit-response/:college', async function(req, res){
   try{
@@ -245,11 +250,78 @@ app.post('/submit-response/:college', async function(req, res){
     console.error("Database insert error:", err);
     res.send(SERVER_ERROR_MSG + ": " + err);
   }
+});
+
+/*----------------------------OLD FROM Winter 24/25, Not using------------------------------------ */
+
+//Returns all survey responses for a University (capstone code)
+app.get('/all-reviews/:college', async function(req, res) {
+  try {
+    let college = req.params["college"];
+    let query = "SELECT * FROM Reviews WHERE college_name = ?";
+
+    let rows = await runSQLQuery(db => db.all(query, college));
+   
+    if (rows && rows.length > 0){
+      res.json(rows) //match found
+    } else{
+      res.json(null) //no average
+    }
+  } catch (err) {
+    res.status(SERVER_ERROR).type("text");
+    res.send(SERVER_ERROR_MSG + ": " + err);
+  }
+});
+
+
+//Returns all the averaged ratings from Reviews table for a given university (capstone code)
+app.get('/rating-avgs/:college', async function(req, res) {
+  try {
+    let college = req.params["college"];
+    let query = "SELECT AVG(lgbtq_safety)         AS lgbtq_avg," 
+              + " AVG(accommodations_difficulty)  AS difficulty_avg,"
+              + " AVG(reliability_rating)         AS reliability_avg,"
+              + " AVG(accommodation_rating)       AS rating_avg," 
+              + " AVG(outside_rating)             AS outside_avg," 
+              + " AVG(inside_accessibility)       AS inside_avg," 
+              + " AVG(liberal_rating)             AS liberal_avg," 
+              + " AVG(diversity_rating)           AS diversity_avg," 
+              + " AVG(tolerance_rating)           AS tolerance_avg," 
+              + " AVG(supportive_rating)          AS supportive_avg," 
+              + " AVG(clubs_rating)               AS clubs_avg,"
+              + " AVG(overallAccess_rating)       AS overallAccess_avg," 
+              + " AVG(overallIdentity_rating)     AS overallIdentity_avg" 
+              + " FROM Reviews WHERE college_name = ?";
+    let rows = await runSQLQuery(db => db.get(query, college));
+    res.json(rows) //match found
+  } catch (err) {
+    res.status(SERVER_ERROR).type("text");
+    res.send(SERVER_ERROR_MSG + ": " + err);
+  }
+});
+
+//Return Y/N stats for a given college (capstone code)
+app.get('/stats/:college', async function(req, res){
+  try{
+    let college = req.params["college"];
+    let query = "SELECT AVG(exclusionary = 'Yes')*100  AS exclusionary_score,"
+              +" AVG(friendly = 'Yes')*100 AS friendly_score,"
+              +" AVG(lgbtq_id = 'Yes')*100  AS lgbtq_score,"
+              +" AVG(mobility = 'Yes')*100  AS mobility_score"
+              +" FROM Reviews WHERE college_name = ?";
+    let rows = await runSQLQuery(db => db.get(query,college));
+    res.json(rows);
+  }catch (err){
+    res.status(SERVER_ERROR).type("text");
+    res.send(SERVER_ERROR_MSG + ": " + err);
+  }
 
 
 });
 
-//Adds a survey response to the Reviews table *winter 24-25 version
+
+
+//Adds a survey response to the Reviews table *winter 24-25 version (capstone code)
 app.post('/submit-survey/:college', async function(req, res){
   try{
     console.log("Recieved survey data: ", req.body);
@@ -333,61 +405,8 @@ app.post('/submit-survey/:college', async function(req, res){
 });
 
 
-
-
-
-/** GETs for college
- * done: get overall/average lgbtq+ safety rating for a given university
- * done: get overall/average accommodation difficulty rating for a given university
- * done: get overall/average reliability rating for a given university
- * done: get overall/average accomodations-rating for a given university
- * done: get overall/average outside rating for a given university
- * done: get overall/average inside accessibility for a given university
- * done: get overall/average liberal rating for a given university 
- * done: get overall/average toelerance rating for a given univerity 
- * done: get overall/average supportive rating for a given university
- * done: get average diversity-rating for a given university
- * done: get overall/average clubs rating for a given university
- * doneL get overall/average overallAccess rating for a given university 
- * get overall/average overallIdentity rating for a given university 
- * get all reviews for a given college (each row should populate a response)
- * 
- * get name of college
- * get state of college
- * get city of college
- * get website of college
- * 
-*/
-//returns all the averaged ratings from Rating table for a given university
-
-// Khai: why do we have two endpoints with the same route?
-// Danielle: fully because I did not realize I did crtl c instead of ctrl x
-
-
-// app.get('/rating_avgs/:college', async function(req, res) {
-//   try {
-//     let college = req.params["college"];
-//     let query = "SELECT AVG(friendly) AS lgbtq_avg, AVG(accommodation_difficulty) AS difficulty_avg," 
-//               + " AVG(reliability_rating) AS reliability_avg, AVG(accommodations_difficulty) AS difficulty_avg,"
-//               + " AVG(outside_rating) AS outside_avg, AVG(inside_accessibility) AS inside_avg,"
-//               + " AVG(liberal_rating) AS liberal_avg, AVG(tolerance_rating) AS tolerance_avg"
-//               + " AVG(support_rating) AS support_avg, AVG(diversity_rating) AS diversity_avg"
-//               + " AVG(clubs_rating) AS clubs_avg, AVG(overallAccess_rating) AS overallAccess_avg, AVG(overalIdentity_rating) AS overallIdentity_avg"
-//               +" FROM Reviews WHERE college_name = ?";
-//     let rows = await runSQLQuery(db => db.get(query,[college]));
-       
-//     res.json(rows) //match found
-    
-//   } catch (err) {
-//     res.status(SERVER_ERROR).type("text");
-//     res.send(SERVER_ERROR_MSG + ": " + err);
-//   }
-// });
-
-
-
 /*below are the gets for individual avgs, delete?*/
-// returns the overall/average lgbtq+ safety rating for a given university
+// returns the overall/average lgbtq+ safety rating for a given university (capstone code)
 app.get('/lgbtq-avg/:college', async function(req, res) {
   try {
     let college = req.params["college"];
